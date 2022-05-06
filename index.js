@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 5000;
@@ -11,6 +12,15 @@ app.use(express.json());
 
 //
 //
+
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  console.log("inside verifyJWT", authHeader);
+  next();
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.qgg7w.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -26,6 +36,17 @@ async function run() {
       .db("smartexWarehouse")
       .collection("product");
     const orderCollection = client.db("smartexWarehouse").collection("order");
+
+    // AUTH
+    app.post("/login", async (req, res) => {
+      const user = req.body;
+      const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1d",
+      });
+      res.send({ accessToken });
+    });
+
+    // Products API
     app.get("/product", async (req, res) => {
       const query = {};
       const cursor = productCollection.find(query);
@@ -57,7 +78,7 @@ async function run() {
 
     // Order Collection API
 
-    app.get("/order", async (req, res) => {
+    app.get("/order", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const cursor = orderCollection.find(query);
