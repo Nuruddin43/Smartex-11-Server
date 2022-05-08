@@ -36,6 +36,7 @@ async function run() {
       .db("smartexWarehouse")
       .collection("product");
     const orderCollection = client.db("smartexWarehouse").collection("order");
+    const myitemCollection = client.db("smartexWarehouse").collection("myitem");
 
     // AUTH
     app.post("/login", async (req, res) => {
@@ -73,6 +74,20 @@ async function run() {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await productCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // MYITEM
+    app.get("/myitem", async (req, res) => {
+      const query = {};
+      const cursor = myitemCollection.find(query);
+      const myitems = await cursor.toArray();
+      res.send(myitems);
+    });
+
+    app.post("/myitem", async (req, res) => {
+      const myitem = req.body;
+      const result = await myitemCollection.insertOne(myitem);
       res.send(result);
     });
 
